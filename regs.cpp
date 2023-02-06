@@ -158,10 +158,19 @@ Register::SyncRegister<> rSystemClock(0x12000000);
 void pllInit() {
 	/* Single line write (read-modify-write) */
 	rSystemClock.set<fSystemClock_Enable>(false);
+	/*
+	14000a64:       f57ff05f        dmb     sy  <<<<<<<>>>>>>>>>
+ 	14000a68:       e59f104c        ldr     r1, [pc, #76]   ; 14000abc <_Z7pllInitv+0x58>
+	14000a6c:       e5912000        ldr     r2, [r1]
+	14000a70:       e5923000        ldr     r3, [r2]
+	14000a74:       e3c33001        bic     r3, r3, #1
+	14000a78:       e5823000        str     r3, [r2]
+	14000a7c:       f57ff04f        dsb     sy  <<<<<<<<>>>>>>>>>
+	*/
+	
+	
 
 	{	
-		Register::AsyncRegister<> SystemClock(0x12000000);
-		
 		/// ************* +/- ?????? ******************
 		// Commit on desctructor
 		// Optized access to fields Read-Mdify-Write
@@ -178,48 +187,40 @@ void pllInit() {
 		// BUT.... RECORD IS NOT SO SIMPLE ....
 		// Lines ... will be optimized to single value
 		
+		Register::AsyncRegister<> SystemClock(0x12000000);	
 		SystemClock.set<fSystemClock_Mode>(SystemClockMode::Mode1);
 		SystemClock.set<fSystemClock_Minute>(1);
 		SystemClock.set<fSystemClock_Hour>(2);
 		SystemClock.set<fSystemClock_Day>(128);
+		/*
+		4000a80:       f57ff05f        dmb     sy
+		14000a84:      	e59f3034        ldr     r3, [pc, #52]   ; 14000ac0 <_Z7pllInitv+0x5c>
+		14000a88:       e3a00412        mov     r0, #301989888  ; 0x12000000
+		14000a8c:       e5902000        ldr     r2, [r0]
+		14000a90:       e2022001        and     r2, r2, #1
+		14000a94:       e1823003        orr     r3, r2, r3
+		14000a98:       e5803000        str     r3, [r0]
+		14000a9c:       f57ff04f        dsb     sy
+		*/
 	}
 	
 	/* Single line write (read-modify-write) */
 	rSystemClock.set<fSystemClock_Enable>(true);
+	/*
+	14000aa0:       f57ff05f        dmb     sy
+	14000aa4:       e5912000        ldr     r2, [r1]
+	14000aa8:       e5923000        ldr     r3, [r2]
+	14000aac:       e3833001        orr     r3, r3, #1
+	14000ab0:       e5823000        str     r3, [r2]
+	14000ab4:       f57ff04f        dsb     sy
+	*/
+
 	
 	// So, I think, after optimization, this code will take a few lines.
-
-/*
-
-14000a64 <_Z7pllInitv>:
-14000a64:       f57ff05f        dmb     sy
-14000a68:       e59f104c        ldr     r1, [pc, #76]   ; 14000abc <_Z7pllInitv+0x58>
-14000a6c:       e5912000        ldr     r2, [r1]
-14000a70:       e5923000        ldr     r3, [r2]
-14000a74:       e3c33001        bic     r3, r3, #1
-14000a78:       e5823000        str     r3, [r2]
-14000a7c:       f57ff04f        dsb     sy
-14000a80:       f57ff05f        dmb     sy
-14000a84:       e59f3034        ldr     r3, [pc, #52]   ; 14000ac0 <_Z7pllInitv+0x5c>
-14000a88:       e3a00412        mov     r0, #301989888  ; 0x12000000
-14000a8c:       e5902000        ldr     r2, [r0]
-14000a90:       e2022001        and     r2, r2, #1
-14000a94:       e1823003        orr     r3, r2, r3
-14000a98:       e5803000        str     r3, [r0]
-14000a9c:       f57ff04f        dsb     sy
-14000aa0:       f57ff05f        dmb     sy
-14000aa4:       e5912000        ldr     r2, [r1]
-14000aa8:       e5923000        ldr     r3, [r2]
-14000aac:       e3833001        orr     r3, r3, #1
-14000ab0:       e5823000        str     r3, [r2]
-14000ab4:       f57ff04f        dsb     sy
-14000ab8:       e12fff1e        bx      lr
-14000abc:       14000ae0        .word   0x14000ae0
-14000ac0:       00801012        .word   0x00801012
-
-
-*/	
-	 
+	/*
+	14000abc:       14000ae0        .word   0x14000ae0
+	14000ac0:       00801012        .word   0x00801012
+	*/	 
 		
 }
 
