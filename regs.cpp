@@ -59,16 +59,14 @@ namespace Register {
 		static constexpr const RegDataType getMaskAtLsb() {
 			constexpr const size_t bitCount = (Field::MSB - Field::LSB) + 1; // +1 -1 will be optimized as const		
 			constexpr const RegDataType mask = ( static_cast<const RegDataType>(1) << (bitCount - 1) ) |
-						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) );
+						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) - 1 );
 			return mask; 
 		}
 		
 		template<typename Field>
-		static constexpr const RegDataType getMask() {
-			constexpr const size_t bitCount = (Field::MSB - Field::LSB) + 1; // +1 -1 will be optimized as const		
-			constexpr const RegDataType zMask = ( static_cast<const RegDataType>(1) << (bitCount - 1) ) |
-						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) );				
-			constexpr const RegDataType mask =  zMask << Field::LSB;
+		static constexpr const RegDataType getMask() {	
+			constexpr const RegDataType lsbMask = getMaskAtLsb<Field>();						      		
+			constexpr const RegDataType mask =  lsbMask << Field::LSB;
 			return mask;
 		}
 
@@ -109,16 +107,14 @@ namespace Register {
 		static constexpr const RegDataType getMaskAtLsb() {
 			constexpr const size_t bitCount = (Field::MSB - Field::LSB) + 1; // +1 -1 will be optimized as const		
 			constexpr const RegDataType mask = ( static_cast<const RegDataType>(1) << (bitCount - 1) ) |
-						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) );
+						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) - 1 );
 			return mask; 
 		}
 		
 		template<typename Field>
-		static constexpr const RegDataType getMask() {
-			constexpr const size_t bitCount = (Field::MSB - Field::LSB) + 1; // +1 -1 will be optimized as const		
-			constexpr const RegDataType zMask = ( static_cast<const RegDataType>(1) << (bitCount - 1) ) |
-						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) );				
-			constexpr const RegDataType mask =  zMask << Field::LSB;
+		static constexpr const RegDataType getMask() {	
+			constexpr const RegDataType lsbMask = getMaskAtLsb<Field>();						      		
+			constexpr const RegDataType mask =  lsbMask << Field::LSB;
 			return mask;
 		}
 								
@@ -132,7 +128,7 @@ namespace Register {
 		inline void set(typename Field::Type value) {
 			constexpr RegDataType mask = getMask<Field>();
 			constexpr RegDataType lsbMask = getMaskAtLsb<Field>();
-			_value &= mask;
+			_value &= ~(mask);
 			_value |= ( static_cast<RegDataType>(value) &  lsbMask ) << Field::LSB;									
 		}
 		
@@ -194,28 +190,34 @@ void pllInit() {
 	// So, I think, after optimization, this code will take a few lines.
 
 /*
+
 14000a64 <_Z7pllInitv>:
 14000a64:       f57ff05f        dmb     sy
-14000a68:       e3003ad4        movw    r3, #2772       ; 0xad4
-14000a6c:       e3413400        movt    r3, #5120       ; 0x1400
-14000a70:       e5931000        ldr     r1, [r3]
-14000a74:       e5912000        ldr     r2, [r1]
-14000a78:       e3c22001        bic     r2, r2, #1
-14000a7c:       e5812000        str     r2, [r1]
-14000a80:       f57ff04f        dsb     sy
-14000a84:       f57ff05f        dmb     sy
-14000a88:       e3a02412        mov     r2, #301989888  ; 0x12000000
-14000a8c:       e5921000        ldr     r1, [r2]
-14000a90:       e3a01000        mov     r1, #0
-14000a94:       e5821000        str     r1, [r2]
-14000a98:       f57ff04f        dsb     sy
-14000a9c:       f57ff05f        dmb     sy
-14000aa0:       e5932000        ldr     r2, [r3]
-14000aa4:       e5923000        ldr     r3, [r2]
-14000aa8:       e3833001        orr     r3, r3, #1
-14000aac:       e5823000        str     r3, [r2]
-14000ab0:       f57ff04f        dsb     sy
-14000ab4:       e12fff1e        bx      lr
+14000a68:       e59f104c        ldr     r1, [pc, #76]   ; 14000abc <_Z7pllInitv+0x58>
+14000a6c:       e5912000        ldr     r2, [r1]
+14000a70:       e5923000        ldr     r3, [r2]
+14000a74:       e3c33001        bic     r3, r3, #1
+14000a78:       e5823000        str     r3, [r2]
+14000a7c:       f57ff04f        dsb     sy
+14000a80:       f57ff05f        dmb     sy
+14000a84:       e59f3034        ldr     r3, [pc, #52]   ; 14000ac0 <_Z7pllInitv+0x5c>
+14000a88:       e3a00412        mov     r0, #301989888  ; 0x12000000
+14000a8c:       e5902000        ldr     r2, [r0]
+14000a90:       e2022001        and     r2, r2, #1
+14000a94:       e1823003        orr     r3, r2, r3
+14000a98:       e5803000        str     r3, [r0]
+14000a9c:       f57ff04f        dsb     sy
+14000aa0:       f57ff05f        dmb     sy
+14000aa4:       e5912000        ldr     r2, [r1]
+14000aa8:       e5923000        ldr     r3, [r2]
+14000aac:       e3833001        orr     r3, r3, #1
+14000ab0:       e5823000        str     r3, [r2]
+14000ab4:       f57ff04f        dsb     sy
+14000ab8:       e12fff1e        bx      lr
+14000abc:       14000ae0        .word   0x14000ae0
+14000ac0:       00801012        .word   0x00801012
+
+
 */	
 	 
 		
