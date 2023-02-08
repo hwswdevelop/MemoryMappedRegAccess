@@ -46,48 +46,34 @@ namespace Register {
 		using AddressType = typename Description::AddressType;
 		using ValueType = typename Description::RegValueType;
 		using Fields = Description;
-		
-		
+			
 		constexpr Class() : _address(RegAddress) {}
 		constexpr Class( AddressType address ) : _address(address) {}
-		constexpr Class( AddressType address, AddressType index) : _address( address + static_cast<AddressType>(index * sizeof(ValueType)) ) {}
-		
-		inline void syncWrite() const {
-			if constexpr( Description::WriteSync ) {
-				asm volatile ("dsb");
-			}
-		}
-				
-		inline void syncRead() const {
-			if constexpr( Description::ReadSync ) {
-				asm volatile ("dsb");
-			}
-		}
-
-		void operator = ( const ValueType value) const {
+	
+		void operator = ( const ValueType value) const volatile {
 			*reinterpret_cast<volatile ValueType* const>(_address) = value;
 			syncWrite();
 		}
 		
-		const ValueType operator * () const {
+		const ValueType operator * () const volatile {
 			syncRead();
 			return *reinterpret_cast<volatile ValueType* const>(_address);
 		}
 		
-		void operator |= ( const ValueType value ) const {
+		void operator |= ( const ValueType value ) const volatile {
 			syncRead();
 			*reinterpret_cast<volatile ValueType* const>(_address) |= value;
 			syncWrite();
 		}
 
-		void operator &= ( const ValueType value ) const {
+		void operator &= ( const ValueType value ) const volatile {
 			syncRead();
 			*reinterpret_cast<volatile ValueType* const>(_address) &= value;
 			syncWrite();
 		}
 		
 		template<typename Field>
-		void set(typename Field::ValueType value) const {
+		void set(typename Field::ValueType value) const volatile {
 			syncRead();
 			ValueType regValue = *reinterpret_cast<volatile ValueType* const>(_address);
 			regValue &= ~(Field::Mask);
@@ -97,16 +83,77 @@ namespace Register {
 		}
 
 		template<typename Field>
-		typename Field::ValueType get() const {
+		typename Field::ValueType get() const volatile {
 			syncRead();
 			ValueType regValue = *reinterpret_cast<volatile ValueType* const>(_address);
 			return static_cast<typename Field::ValueType>( (regValue >> Field::LSB) & Field::LsbMask );
 		}
 		
-	private:		
+		
+	private:	
+		inline void syncWrite() const volatile {
+			if constexpr( Description::WriteSync ) {
+				asm volatile ("dsb");
+			}
+		}
+				
+		inline void syncRead() const volatile {
+			if constexpr( Description::ReadSync ) {
+				asm volatile ("dsb");
+			}
+		}		
+		
+	private:
 		const AddressType _address { RegAddress };
 	};
 	
+	
+	template<typename Description, typename Description::AddressType RegAddress = 0>
+	struct CachedClass : public Description {
+		using AddressType = typename Description::AddressType;
+		using ValueType = typename Description::RegValueType;
+		using Fields = Description;
+		
+		constexpr CachedClass() : _reg(RegAddress), _value(*_reg) {}
+		 
+		constexpr CachedClass( AddressType address ) : _reg(RegAddress), _value(*_reg) {}
+		
+		~CachedClass(){
+			_reg = _value;
+		}	
+
+		inline void operator = ( const ValueType value) {
+			_value = value;
+		}
+		
+		const ValueType operator * () const {
+			return _value;
+		}
+		
+		inline void operator |= ( const ValueType value ) {
+			_value |= value;
+		}
+
+		inline void operator &= ( const ValueType value ) {
+			_value &= value;
+		}
+		
+		template<typename Field>
+		inline void set(typename Field::ValueType value) {
+			_value  &= ~(Field::Mask);
+			_value  |= ( static_cast<ValueType>(value) & Field::LsbMask );
+		}
+		
+		template<typename Field>
+		typename Field::ValueType get() const {
+			return static_cast<typename Field::ValueType>( ( _value >> Field::LSB) & Field::LsbMask );
+		}
+
+	private:
+		const Class<Description, RegAddress>    _reg {};		
+		ValueType 				_value{};		
+	};
+		
 }
 
 

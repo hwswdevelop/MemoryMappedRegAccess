@@ -29,6 +29,8 @@ struct ClockControlRegDescr : public Register::Description {
 	using AddressType = uint32_t;
 	using ValueType	  = uint32_t;
 	
+	static constexpr const bool ReadSync = true;
+	
 	enum class TClockEnable {
 		Disable,
 		Enable
@@ -72,15 +74,18 @@ void pllInit() {
 	ClockControl.set<ClockControlReg::Counter>( 5 );	
 	/* Set clock enable bit */
 	ClockControl.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Enable );
-	
-	/* Other address register. 0x12010004, i.e. + (1 * sizeof(RegValueType)) */
-	for(int i = 1; i < 10; i++) {
-		const ClockControlReg cc(0x12010000, i);
-		/* Stop clock */	
-		cc.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Disable );
-		/* Set counter mode stopped */
-		cc.set<ClockControlReg::Mode>( ClockControlReg::Mode::ValueType::Stopped );
-	}	
+
+
+	for(uint32_t i = 1; i < 30; i++) {
+		/* Now, disable clock */
+		const Register::Class<ClockControlRegDescr> cc_off;
+		cc_off.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Disable );
+		/* Now enable all clocks, with downcouning */
+		Register::CachedClass<ClockControlRegDescr> cc_on(0x12010000 + (i * 4) );
+		cc_on.set<ClockControlReg::Counter>( 10 );
+		cc_on.set<ClockControlReg::Mode>( ClockControlReg::Mode::ValueType::DownCounting );
+		cc_on.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Enable );
+	}
 	
 }
 
