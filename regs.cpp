@@ -3,226 +3,182 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <MemIo.h>
-#include <MemIoDescription.h>
-
-
-
-namespace Register {
-
-	using MemIo32 = MemIo<Mem32IoDescription>;
-	using MemIo16 = MemIo<Mem16IoDescription>;
-	using MemIo8  = MemIo<Mem8IoDescription>;
-
-} // Register
 
 namespace Register {
 
 	struct Description {
 	
-		using RegDataType = uint32_t;
+		using RegValueType = uint32_t;
+		static constexpr const bool ReadSync = false;
+		static constexpr const bool WriteSync = true;
 	
-		template<size_t BitNo = 0, typename DataType = bool>
+		template<size_t BitNo = 0, typename BitValueType = bool>
 		struct Bit {
-			using Type = DataType;
+			using ValueType = BitValueType;
+			using Type = ValueType;
 			static constexpr const size_t LSB = BitNo;
 			static constexpr const size_t MSB = BitNo;
+			static_assert( (MSB >= LSB), "Please check register bitfield configuration");			
+			static constexpr const RegValueType  LsbMask = 0x01;
+			static constexpr const RegValueType  Mask = ( LsbMask << LSB );
 		};
 		
-		template<size_t msb = 0, size_t lsb = 0, typename DataType = RegDataType >
+		template<size_t msb = 0, size_t lsb = 0, typename FieldValueType = RegValueType >
 		struct Field {
-			using Type = DataType;
+			using ValueType = FieldValueType;
+			using Type = ValueType;
 			static constexpr const size_t LSB = lsb;
 			static constexpr const size_t MSB = msb;
+			static_assert( (MSB >= LSB), "Please check register bitfield configuration");			
+			static constexpr const RegValueType LsbMask = ( static_cast<RegValueType>(1) << (MSB - LSB) ) | 
+								      ( ( static_cast<RegValueType>(1)  << (MSB - LSB) ) - 1 ) ;
+			static constexpr const RegValueType Mask = ( LsbMask << LSB );
 		};
-
-	};
-
-} // Register
-
-
-// Packed structute????? 
-// Will not solve problem of endianess....
-// Don't work correctly with some types of comilers.
-
-
-namespace Register {
-
-	template<typename RegisterIo = MemIo32>
-	struct SyncRegister {
-		using RegDataType = typename RegisterIo::IoDescr::RegDataType;
-		using BusDataType = typename RegisterIo::IoDescr::BusDataType;
-
-		constexpr SyncRegister(const BusDataType address) : _regIo(address) {};
-
-		template<typename Field>
-		static constexpr const RegDataType getMaskAtLsb() {
-			constexpr const size_t bitCount = (Field::MSB - Field::LSB) + 1; // +1 -1 will be optimized as const		
-			constexpr const RegDataType mask = ( static_cast<const RegDataType>(1) << (bitCount - 1) ) |
-						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) - 1 );
-			return mask; 
-		}
 		
-		template<typename Field>
-		static constexpr const RegDataType getMask() {	
-			constexpr const RegDataType lsbMask = getMaskAtLsb<Field>();						      		
-			constexpr const RegDataType mask =  lsbMask << Field::LSB;
-			return mask;
-		}
+		struct Value : Field<( ( sizeof(RegValueType) * 8) - 1 ), 0> {};
 
-		template<typename Field>
-		inline typename Field::Type get() {
-			constexpr const RegDataType mask = getMaskAtLsb<Field>();
-			return static_cast<typename Field::Type>( ( _regIo.read()  >> Field::LSB) & mask );
-		}	
-			
-		template<typename Field>
-		inline void set(typename Field::Type value) {
-			constexpr const RegDataType mask = getMask<Field>();
-			constexpr const RegDataType lsbMask = getMaskAtLsb<Field>();
-			RegDataType regValue = _regIo.read();
-			regValue &= ~mask;
-			regValue |= (static_cast<RegDataType>(value) &  lsbMask) << Field::LSB;
-			_regIo.write(regValue);
-		}
-		
-	private:
-		const RegisterIo 	_regIo {};		
 	};
 	
-	template<typename RegisterIo = MemIo32>
-	struct AsyncRegister {
-		using RegDataType = typename RegisterIo::IoDescr::RegDataType;
-		using BusDataType = typename RegisterIo::IoDescr::BusDataType;
-
-		constexpr AsyncRegister(const BusDataType address) : _regIo(address) {
-			_value = _regIo.read();
-		};
-
-		~AsyncRegister() {
-			_regIo.write(_value);
+	template<typename Description, typename Description::AddressType RegAddress = 0>
+	struct Class : public Description {
+		using AddressType = typename Description::AddressType;
+		using ValueType = typename Description::RegValueType;
+		using Fields = Description;
+		
+		
+		constexpr Class() : _address(RegAddress) {}
+		constexpr Class( AddressType address ) : _address(address) {}
+		constexpr Class( AddressType address, AddressType index) : _address( address + static_cast<AddressType>(index * sizeof(ValueType)) ) {}
+		
+		inline void syncWrite() const {
+			if constexpr( Description::WriteSync ) {
+				asm volatile ("dsb");
+			}
+		}
+				
+		inline void syncRead() const {
+			if constexpr( Description::ReadSync ) {
+				asm volatile ("dsb");
+			}
 		}
 
-		template<typename Field>
-		static constexpr const RegDataType getMaskAtLsb() {
-			constexpr const size_t bitCount = (Field::MSB - Field::LSB) + 1; // +1 -1 will be optimized as const		
-			constexpr const RegDataType mask = ( static_cast<const RegDataType>(1) << (bitCount - 1) ) |
-						           ( ( static_cast<const RegDataType>(1) << (bitCount - 1) ) - 1 );
-			return mask; 
+		void operator = ( const ValueType value) const {
+			*reinterpret_cast<volatile ValueType* const>(_address) = value;
+			syncWrite();
+		}
+		
+		const ValueType operator * () const {
+			syncRead();
+			return *reinterpret_cast<volatile ValueType* const>(_address);
+		}
+		
+		void operator |= ( const ValueType value ) const {
+			syncRead();
+			*reinterpret_cast<volatile ValueType* const>(_address) |= value;
+			syncWrite();
+		}
+
+		void operator &= ( const ValueType value ) const {
+			syncRead();
+			*reinterpret_cast<volatile ValueType* const>(_address) &= value;
+			syncWrite();
 		}
 		
 		template<typename Field>
-		static constexpr const RegDataType getMask() {	
-			constexpr const RegDataType lsbMask = getMaskAtLsb<Field>();						      		
-			constexpr const RegDataType mask =  lsbMask << Field::LSB;
-			return mask;
+		void set(typename Field::ValueType value) const {
+			syncRead();
+			ValueType regValue = *reinterpret_cast<volatile ValueType* const>(_address);
+			regValue &= ~(Field::Mask);
+			regValue |= ( static_cast<ValueType>(value) & Field::LsbMask );
+			*reinterpret_cast<volatile ValueType* const>(_address) = regValue;
+			syncWrite();
 		}
-								
+
 		template<typename Field>
-		inline typename Field::Type get() {
-			constexpr const RegDataType mask = getMaskAtLsb<Field>();
-			return static_cast<typename Field::Type>( ( _value >> Field::LSB ) & mask );
-		}
-	
-		template<typename Field>
-		inline void set(typename Field::Type value) {
-			constexpr RegDataType mask = getMask<Field>();
-			constexpr RegDataType lsbMask = getMaskAtLsb<Field>();
-			_value &= ~(mask);
-			_value |= ( static_cast<RegDataType>(value) &  lsbMask ) << Field::LSB;									
+		typename Field::ValueType get() const {
+			syncRead();
+			ValueType regValue = *reinterpret_cast<volatile ValueType* const>(_address);
+			return static_cast<typename Field::ValueType>( (regValue >> Field::LSB) & Field::LsbMask );
 		}
 		
-	private:
-		const RegisterIo 	_regIo {};
-		RegDataType		_value {};
-		
+	private:		
+		const AddressType _address { RegAddress };
 	};
+	
+} 
 
-} // Register
 
 
-enum class SystemClockMode {
-	Mode0 = 0,
-	Mode1,
-	Mode2	
+struct SystemControlRegDescr : public Register::Description {
+	using AddressType = uint32_t;
+	using ValueType	  = uint32_t;
+	
+	struct PllEnable 		: public Bit<0> {};
+	struct PheriphClockEnable 	: public Bit<1> {};
+	
+	enum class TAllClockEnable {
+		Disable = 0,
+		Enable = 0x03
+	};
+	struct AllClock : public Field<1,0,TAllClockEnable> {};
 };
 
-using fSystemClock_Enable = Register::Description::Bit<0>;
-using fSystemClock_Mode   = Register::Description::Field<3,1, SystemClockMode>;
-using fSystemClock_Minute = Register::Description::Field<10,4, uint8_t>;
-using fSystemClock_Hour   = Register::Description::Field<15,11, uint8_t>;
-using fSystemClock_Day    = Register::Description::Field<31,16, uint16_t>;
+struct ClockControlRegDescr : public Register::Description {
+	using AddressType = uint32_t;
+	using ValueType	  = uint32_t;
+	
+	enum class TClockEnable {
+		Disable,
+		Enable
+	};
+	enum class TCountMode {
+		UpCounting,
+		DownCounting,
+		Stopped,
+		Reserved
+	};	
+	struct Clock	  : public Bit<0, TClockEnable> {};
+	struct Counter    : public Field<15, 8, uint8_t> {};
+	struct Mode       : public Field<2, 1, TCountMode> {};
+};
 
-Register::SyncRegister<> rSystemClock(0x12000000);
+using SystemControlReg = Register::Class<SystemControlRegDescr, 0x12010000>;
+using ClockControlReg  = Register::Class<ClockControlRegDescr,  0x12010004>;
+
+constexpr const SystemControlReg	SystemControl;
+constexpr const ClockControlReg 	ClockControl;
+
 
 void pllInit() {
-	/* Single line write (read-modify-write) */
-	rSystemClock.set<fSystemClock_Enable>(false);
-	/*
-	14000a64:       f57ff05f        dmb     sy  <<<<<<<>>>>>>>>>
- 	14000a68:       e59f104c        ldr     r1, [pc, #76]   ; 14000abc <_Z7pllInitv+0x58>
-	14000a6c:       e5912000        ldr     r2, [r1]
-	14000a70:       e5923000        ldr     r3, [r2]
-	14000a74:       e3c33001        bic     r3, r3, #1
-	14000a78:       e5823000        str     r3, [r2]
-	14000a7c:       f57ff04f        dsb     sy  <<<<<<<<>>>>>>>>>
-	*/
-	
-	
 
-	{	
-		/// ************* +/- ?????? ******************
-		// Commit on desctructor
-		// Optized access to fields Read-Mdify-Write
-		// Parallel write into port
-		// Dont'use packed attribute. 
-		// What about endian problems ????
-		// Possible make field read/write, value control
-		// Possible to check regiter and field comparation
-		// Possible to check value ranges
-		// Possible to check data types 
-		// BUT.... RECORD IS NOT SO SIMPLE ....
-		// BUT.... RECORD IS NOT SO SIMPLE ....
-		// BUT.... RECORD IS NOT SO SIMPLE ....
-		// BUT.... RECORD IS NOT SO SIMPLE ....
-		// Lines ... will be optimized to single value
-		
-		Register::AsyncRegister<> SystemClock(0x12000000);	
-		SystemClock.set<fSystemClock_Mode>(SystemClockMode::Mode1);
-		SystemClock.set<fSystemClock_Minute>(1);
-		SystemClock.set<fSystemClock_Hour>(2);
-		SystemClock.set<fSystemClock_Day>(128);
-		/*
-		4000a80:       f57ff05f        dmb     sy
-		14000a84:      	e59f3034        ldr     r3, [pc, #52]   ; 14000ac0 <_Z7pllInitv+0x5c>
-		14000a88:       e3a00412        mov     r0, #301989888  ; 0x12000000
-		14000a8c:       e5902000        ldr     r2, [r0]
-		14000a90:       e2022001        and     r2, r2, #1
-		14000a94:       e1823003        orr     r3, r2, r3
-		14000a98:       e5803000        str     r3, [r0]
-		14000a9c:       f57ff04f        dsb     sy
-		*/
-	}
-	
-	/* Single line write (read-modify-write) */
-	rSystemClock.set<fSystemClock_Enable>(true);
-	/*
-	14000aa0:       f57ff05f        dmb     sy
-	14000aa4:       e5912000        ldr     r2, [r1]
-	14000aa8:       e5923000        ldr     r3, [r2]
-	14000aac:       e3833001        orr     r3, r3, #1
-	14000ab0:       e5823000        str     r3, [r2]
-	14000ab4:       f57ff04f        dsb     sy
-	*/
+	/* Disable all clock. All closk is BIT0 and BIT1 */
+	SystemControl.set<SystemControlReg::AllClock>(SystemControlReg::AllClock::ValueType::Disable);
+	/* Enable PLL */
+	SystemControl.set<SystemControlReg::PllEnable>(true);
+	/* Enable periph clock */
+	SystemControl.set<SystemControlReg::PheriphClockEnable>(true);
 
+	/* Write 0 into clock control as full register value */
+	ClockControl = 0;
+	/* Write 0 into clock control as full register value, via value */
+	ClockControl.set<ClockControlReg::Value>(0);	
+	/* Set clock control bitfield */
+	ClockControl.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Disable );
+	/* Set clock mode */
+	ClockControl.set<ClockControlReg::Mode>( ClockControlReg::Mode::ValueType::UpCounting );
+	/* Set counter value */
+	ClockControl.set<ClockControlReg::Counter>( 5 );	
+	/* Set clock enable bit */
+	ClockControl.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Enable );
 	
-	// So, I think, after optimization, this code will take a few lines.
-	/*
-	14000abc:       14000ae0        .word   0x14000ae0
-	14000ac0:       00801012        .word   0x00801012
-	*/	 
-		
+	/* Other address register. 0x12010004, i.e. + (1 * sizeof(RegValueType)) */
+	for(int i = 1; i < 10; i++) {
+		const ClockControlReg cc(0x12010000, i);
+		/* Stop clock */	
+		cc.set<ClockControlReg::Clock>( ClockControlReg::Clock::ValueType::Disable );
+		/* Set counter mode stopped */
+		cc.set<ClockControlReg::Mode>( ClockControlReg::Mode::ValueType::Stopped );
+	}	
+	
 }
-
-
 
