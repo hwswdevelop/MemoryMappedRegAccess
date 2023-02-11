@@ -36,7 +36,11 @@
 	Another class (Register::CachedClass) will help you access to
 	the register memory in the single modification more then one filed.
 	Constructor: register _tmp_reg <= REG
-	Modify: _tmp_reg by "&=", "|="
+	
+	Modify: _tmp_reg by "&=", "|=", but after modificaton this instructions,
+	may be comressed into single "|=", or single "&=" or two instructions "&=" + "|=". 
+	It will optimize access on "Assembly level" access.
+	
 	Destructor: write register REG <= _tmp_reg
 	
 	You can use single desccription of both classes.
