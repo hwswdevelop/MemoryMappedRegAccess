@@ -1,54 +1,70 @@
 
-/* (C) Evgeny Sobolev 09.02.1984 y.b, VRN, Russia, 	*/
-/* At 09.02.2023 					*/
+/* (C) Evgeny Sobolev 09.02.1984 y.b., VRN, Russia, 	*/
+/* at 09.02.2023 					*/
 
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
 
 namespace Register {
 
-	struct Description {
-	
-		using RegValueType = uint32_t;
+	struct AccessConfig {
+		using Value   = uint32_t;
+		using Address = uint32_t;
 		static constexpr const bool ReadSync = false;
-		static constexpr const bool WriteSync = true;
-	
-		template<size_t BitNo = 0, typename BitValueType = bool>
-		struct Bit {
-			using ValueType = BitValueType;
-			using Type = ValueType;
-			static constexpr const size_t LSB = BitNo;
-			static constexpr const size_t MSB = BitNo;
-			static_assert( (MSB >= LSB), "Please check register bitfield configuration");			
-			static constexpr const RegValueType  LsbMask = 0x01;
-			static constexpr const RegValueType  Mask = ( LsbMask << LSB );
-		};
-		
-		template<size_t msb = 0, size_t lsb = 0, typename FieldValueType = RegValueType >
+		static constexpr const bool WriteSync = false;
+	};
+
+	template<typename RegisterAccessConfig = AccessConfig>
+	struct Description {
+		using RegisterValueType					= typename RegisterAccessConfig::Value;
+		using RegisterAddressType				= typename RegisterAccessConfig::Address;
+		static constexpr const bool ReadSync 	= RegisterAccessConfig::ReadSync;
+		static constexpr const bool WriteSync	= RegisterAccessConfig::WriteSync;
+
+		template< size_t msb = 0, size_t lsb = 0, typename FieldValueType = RegisterValueType, typename RegValueType = RegisterValueType >
 		struct Field {
 			using ValueType = FieldValueType;
 			using Type = ValueType;
+
 			static constexpr const size_t LSB = lsb;
 			static constexpr const size_t MSB = msb;
-			static_assert( (MSB >= LSB), "Please check register bitfield configuration");			
-			static constexpr const RegValueType LsbMask = ( static_cast<RegValueType>(1) << (MSB - LSB) ) | 
-								      ( ( static_cast<RegValueType>(1)  << (MSB - LSB) ) - 1 ) ;
+
+			static_assert( ( MSB >= LSB ), "Please check register bitfield configuration" );
+			static_assert( (MSB - LSB + 1) <= (sizeof(RegValueType) * 8), "Please check register value size" );
+			static_assert( ( MSB < ( sizeof(RegValueType) * 8) ), "Bitfield is outside of register");
+			static_assert( ( LSB >= 0 ), "Please check LSB value");
+			static_assert( ( ( MSB - LSB + 1 ) <= ( sizeof(ValueType) * 8 ) ), "Please check type of Field. Bit count > size of type" );
+
+			static constexpr const RegValueType LsbMask = (   static_cast<RegValueType>(1) << (MSB - LSB) ) | 
+								      					  ( ( static_cast<RegValueType>(1)  << (MSB - LSB) ) - 1 ) ;
 			static constexpr const RegValueType Mask = ( LsbMask << LSB );
 		};
-		
-		struct Value : Field<( ( sizeof(RegValueType) * 8) - 1 ), 0> {};
 
+		template< size_t BitNo = 0, typename BitValueType = bool, typename RegValueType = RegisterValueType >
+		struct Bit : public Field< BitNo, BitNo, BitValueType, RegValueType > {};
+
+		struct Value : Field<( ( sizeof(RegisterValueType) * 8) - 1 ), 0> {};
 	};
 	
-	template<typename Description, typename Description::AddressType RegAddress = 0>
-	struct Class : public Description {
-		using AddressType = typename Description::AddressType;
-		using ValueType = typename Description::RegValueType;
+
+	template<typename Description, typename Description::RegisterAddressType RegAddress = 0>
+	struct Class {
+		using AddressType = typename Description::RegisterAddressType;
+		using ValueType = typename Description::RegisterValueType;
 		using Fields = Description;
-			
+
 		constexpr Class() : _address(RegAddress) {}
 		constexpr Class( AddressType address ) : _address(address) {}
+		
+		const AddressType address() const {
+			return _address;
+		}
+
+		const size_t size() {
+			return sizeof(ValueType);
+		}
 	
 		void operator = ( const ValueType value) const volatile {
 			*reinterpret_cast<volatile ValueType* const>(_address) = value;
@@ -89,29 +105,28 @@ namespace Register {
 			return static_cast<typename Field::ValueType>( (regValue >> Field::LSB) & Field::LsbMask );
 		}
 		
-		
 	private:	
 		inline void syncWrite() const volatile {
 			if constexpr( Description::WriteSync ) {
-				asm volatile ("dsb");
+				asm volatile ("dmb st");
 			}
 		}
 				
 		inline void syncRead() const volatile {
 			if constexpr( Description::ReadSync ) {
-				asm volatile ("dsb");
+				asm volatile ("dmb");
 			}
 		}		
 		
 	private:
 		const AddressType _address { RegAddress };
 	};
-	
-	
-	template<typename Description, typename Description::AddressType RegAddress = 0>
-	struct CachedClass : public Description {
-		using AddressType = typename Description::AddressType;
-		using ValueType = typename Description::RegValueType;
+
+
+	template<typename Description, typename Description::RegisterAddressType RegAddress = 0>
+	struct CachedClass  {
+		using AddressType = typename Description::RegisterAddressType;
+		using ValueType = typename Description::RegisterValueType;
 		using Fields = Description;
 		
 		constexpr CachedClass() : _reg(RegAddress), _value(*_reg) {}
@@ -150,10 +165,10 @@ namespace Register {
 		}
 
 	private:
-		const Class<Description, RegAddress>    _reg {};		
-		ValueType 				_value{};		
+		const Class<Description, RegAddress>	_reg {};		
+		ValueType 								_value{};		
 	};
+
 		
 }
-
 
