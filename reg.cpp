@@ -11,16 +11,34 @@
 /* Sample, how to describe registers */
 
 
-struct SystemControlRegDescr : public Register::Description<> {
 
+
+
+/*
+	So, this register, can be described as
+	__attributr_((packed)) ....
+	typedef ... union {
+		struct {
+			uint32_t PllEnable:1;
+			uint32_t PheriphClockEnable:1;
+		}
+		struct {
+			uint32_t AllClockEnable:2;
+		}
+	} something;
+	But I want to add DMB, DSB, etc...
+	I want to check type checking and type converison
+	I wanna to add value something like bit description, 
+	But where will I describe it????
+*/
+
+struct SystemControlRegDescr : public Register::Description<> {	
 	struct PllEnable 		: public Bit<0> {};
-	struct PheriphClockEnable 	: public Bit<1> {};
-	
+	struct PheriphClockEnable 	: public Bit<1> {};	
 	enum class TAllClockEnable {
 		Disable = 0,
 		Enable = 0x03
 	};
-
 	struct AllClock : public Field<1,0,TAllClockEnable> {};
 };
 
