@@ -46,7 +46,9 @@
 	You can use single desccription of both classes.
 
 	You can call me: +79003030374, we will discuss description.
-	Evgeny Sobolev 02/09/1984 y.b., VRN, Russia
+	Evgeny Sobolev 02/09/1984 y.b., VRN, Russia,
+	May be it is possible to make it better. I tried to find
+	another way, but didn't found.
 */
 
 struct SystemControlRegDescr : public Register::Description<> {	
