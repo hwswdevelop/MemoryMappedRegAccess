@@ -9,11 +9,6 @@
 
 
 /* Sample, how to describe registers */
-
-
-
-
-
 /*
 	So, this register, can be described as
 	__attributr_((packed)) ....
@@ -30,6 +25,19 @@
 	I want to check type checking and type converison
 	I wanna to add value something like bit description, 
 	But where will I describe it????
+	
+	So, "constexpr class" variable, will not take memory inside
+	.text (non-volatile code section),
+	.ram (volatile sram/sdram section)
+	It is only like optimized inline functions.
+	It allow you to make single Read-Modify-Write operation, by the each field
+	But it can be unconstexpred, if you will use another constructor.
+	
+	Another class (Register::CachedClass) will help you access to
+	the register memory in the single modification more then one filed.
+	
+	You can call me: +79003030374, we will discuss description.
+	Evgeny Sobolev 02/09/1984 y.b., VRN, Russia
 */
 
 struct SystemControlRegDescr : public Register::Description<> {	
