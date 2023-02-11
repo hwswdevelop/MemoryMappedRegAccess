@@ -35,7 +35,12 @@
 	
 	Another class (Register::CachedClass) will help you access to
 	the register memory in the single modification more then one filed.
+	Constructor: register _tmp_reg <= REG
+	Modify: _tmp_reg by "&=", "|="
+	Destructor: write register REG <= _tmp_reg
 	
+	You can use single desccription of both classes.
+
 	You can call me: +79003030374, we will discuss description.
 	Evgeny Sobolev 02/09/1984 y.b., VRN, Russia
 */
