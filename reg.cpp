@@ -21,8 +21,16 @@
 			uint32_t AllClockEnable:2;
 		}
 	} *pSomething, Something;
+	volatile Something* const reg = (Som...)(addr);
+	
 	What about reserved fields ????? 
-	It will be Reserved1, Reserved2, etc...
+	It have to name it Reserved1, Reserved2, etc...
+	
+	Another way to describe fields is
+	#define PLL_ENABLE (1 << 0) ...., but,
+	... if I will use another const with this register.
+	
+	
 	What about Big/Little endian, so if I want to fixup edianess?
 		
 	But I want to add DMB, DSB, etc...
@@ -30,12 +38,12 @@
 	I wanna to add value something like bit description, 
 	But where will I describe it????
 	
-	So, "constexpr class" variable, will not take memory inside
+	So, "constexpr Сlass" variable, will not take memory inside
 	.text (non-volatile code section),
 	.ram (volatile sram/sdram section)
 	It is only like optimized inline functions.
 	It allow you to make single Read-Modify-Write operation, by the each field
-	But it can be unconstexpred, if you will use another constructor.
+	But it can be un-constexpred, if you will use another constructor.
 	
 	Another class (Register::CachedClass) will help you access to
 	the register memory in the single modification more then one filed.
