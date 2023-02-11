@@ -6,7 +6,7 @@ It is possiblet to make it safe.
 Assert on wrong values, possible static asserts, and other
 compile time or runtime error detection.
 
-
+<code>
 ////////////////////////////
 /* Sample, how to describe registers */
 /*
@@ -63,4 +63,4 @@ struct SystemControlRegDescr : public Register::Description<> {
 	};
 	struct AllClock : public Field<1,0,TAllClockEnable> {};
 };
-
+</code>
