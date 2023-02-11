@@ -20,7 +20,11 @@
 		struct {
 			uint32_t AllClockEnable:2;
 		}
-	} something;
+	} *pSomething, Something;
+	What about reserved fields ????? 
+	It will be Reserved1, Reserved2, etc...
+	What about Big/Little endian, so if I want to fixup edianess?
+		
 	But I want to add DMB, DSB, etc...
 	I want to check type checking and type converison
 	I wanna to add value something like bit description, 
