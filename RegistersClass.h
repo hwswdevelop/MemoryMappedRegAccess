@@ -22,7 +22,7 @@ namespace Register {
 		using RegisterAddressType						= typename RegisterAccessConfig::Address;
 		static constexpr const bool ReadSync 			= RegisterAccessConfig::ReadSync;
 		static constexpr const bool WriteSync			= RegisterAccessConfig::WriteSync;
-		static constexpr const RegisterDefaultAddress	= DefaultRegisterAddress;
+		static constexpr const RegisterAddressType RegisterDefaultAddress = DefaultRegisterAddress;
 
 		template< size_t msb = 0, size_t lsb = 0, typename FieldValueType = RegisterValueType, typename RegValueType = RegisterValueType >
 		struct Field {
