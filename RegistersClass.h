@@ -16,12 +16,13 @@ namespace Register {
 		static constexpr const bool WriteSync = false;
 	};
 
-	template<typename RegisterAccessConfig = AccessConfig>
+	template<typename RegisterAccessConfig = AccessConfig, typename RegisterAccessConfig::Address DefaultRegisterAddress = 0 >
 	struct Description {
-		using RegisterValueType					= typename RegisterAccessConfig::Value;
-		using RegisterAddressType				= typename RegisterAccessConfig::Address;
-		static constexpr const bool ReadSync 	= RegisterAccessConfig::ReadSync;
-		static constexpr const bool WriteSync	= RegisterAccessConfig::WriteSync;
+		using RegisterValueType							= typename RegisterAccessConfig::Value;
+		using RegisterAddressType						= typename RegisterAccessConfig::Address;
+		static constexpr const bool ReadSync 			= RegisterAccessConfig::ReadSync;
+		static constexpr const bool WriteSync			= RegisterAccessConfig::WriteSync;
+		static constexpr const RegisterDefaultAddress	= DefaultRegisterAddress;
 
 		template< size_t msb = 0, size_t lsb = 0, typename FieldValueType = RegisterValueType, typename RegValueType = RegisterValueType >
 		struct Field {
@@ -49,7 +50,7 @@ namespace Register {
 	};
 	
 
-	template<typename Description, typename Description::RegisterAddressType RegAddress = 0>
+	template< typename Description, typename Description::RegisterAddressType RegAddress = Description::RegisterDefaultAddress >
 	struct Class {
 		using AddressType = typename Description::RegisterAddressType;
 		using ValueType = typename Description::RegisterValueType;
@@ -123,7 +124,7 @@ namespace Register {
 	};
 
 
-	template<typename Description, typename Description::RegisterAddressType RegAddress = 0>
+	template<typename Description, typename Description::RegisterAddressType RegAddress = Description::RegisterDefaultAddress>
 	struct CachedClass  {
 		using AddressType = typename Description::RegisterAddressType;
 		using ValueType = typename Description::RegisterValueType;
