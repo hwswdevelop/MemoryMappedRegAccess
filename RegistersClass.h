@@ -91,6 +91,7 @@ namespace Register {
 		
 		template<typename Field>
 		void set(typename Field::ValueType value) const volatile {
+			// TO DO: Add register filed type check
 			syncRead();
 			ValueType regValue = *reinterpret_cast<volatile ValueType* const>(_address);
 			regValue &= ~(Field::Mask);
@@ -101,6 +102,7 @@ namespace Register {
 
 		template<typename Field>
 		typename Field::ValueType get() const volatile {
+			// TO DO: Add register filed type check
 			syncRead();
 			ValueType regValue = *reinterpret_cast<volatile ValueType* const>(_address);
 			return static_cast<typename Field::ValueType>( (regValue >> Field::LSB) & Field::LsbMask );
@@ -156,12 +158,14 @@ namespace Register {
 		
 		template<typename Field>
 		inline void set(typename Field::ValueType value) {
+			// TO DO: Add register filed type check
 			_value  &= ~(Field::Mask);
 			_value  |= ( static_cast<ValueType>(value) & Field::LsbMask );
 		}
 		
 		template<typename Field>
 		typename Field::ValueType get() const {
+			// TO DO: Add register filed type check
 			return static_cast<typename Field::ValueType>( ( _value >> Field::LSB) & Field::LsbMask );
 		}
 
