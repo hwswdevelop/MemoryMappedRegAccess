@@ -35,14 +35,13 @@ namespace Register {
 		template< size_t msb = 0, size_t lsb = 0, typename FieldValueType = RegisterValueType, typename RegValueType = RegisterValueType >
 		struct Field {
 			using ValueType = FieldValueType;
-			using Type = ValueType;
 
 			static constexpr const size_t LSB = lsb;
 			static constexpr const size_t MSB = msb;
 
 			static_assert( ( MSB >= LSB ), "Please check register bitfield configuration" );
-			static_assert( (MSB - LSB + 1) <= (sizeof(RegValueType) * 8), "Please check register value size" );
-			static_assert( ( MSB < ( sizeof(RegValueType) * 8) ), "Bitfield is outside of register");
+			static_assert( ( MSB - LSB + 1 ) <= (sizeof(RegValueType) * 8), "Please check register value size" );
+			static_assert( ( MSB < ( sizeof(RegValueType) * 8) ), "Bitfield is outside of register" );
 			static_assert( ( LSB >= 0 ), "Please check LSB value");
 			static_assert( ( ( MSB - LSB + 1 ) <= ( sizeof(ValueType) * 8 ) ), "Please check type of Field. Bit count > size of type" );
 
@@ -53,7 +52,7 @@ namespace Register {
 
 			static constexpr const RegValueType Mask = ( LsbMask << LSB );
 			
-			inline void set(const ValueType value) const {
+			inline void set(const FieldValueType value) const {
 				if constexpr ( BitCount != (sizeof(RegValueType) * 8) ) {
 					syncReadCommand();
 					RegValueType regValue = *reinterpret_cast<volatile RegValueType* const>(RegisterAddress);
@@ -69,7 +68,7 @@ namespace Register {
 			inline const ValueType get() const {
 				syncReadCommand();
 				RegValueType regValue = *reinterpret_cast<volatile RegValueType* const>(RegisterAddress);
-				return static_cast<const ValueType>( ( regValue >> LSB ) & LsbMask );
+				return static_cast<const FieldValueType>( ( regValue >> LSB ) & LsbMask );
 			}
 		};
 
@@ -207,7 +206,7 @@ namespace Register {
 
 	private:
 		const Class<Description>				_reg {};		
-		ValueType 								_value{};		
+		ValueType 								_value {};		
 	};
 
 }
