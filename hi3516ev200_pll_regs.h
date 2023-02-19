@@ -11,8 +11,8 @@
 struct RegAccessConfig {
         using Value   = uint32_t;
         using Address = uint32_t;
-        static constexpr const bool ReadSync = true;
-        static constexpr const bool WriteSync = true;
+        static constexpr const bool ReadSync = false;
+        static constexpr const bool WriteSync = false;
 };
 
 namespace PeriCrg {
@@ -26,7 +26,7 @@ namespace PeriCrg {
         pstdiv1: first stage output frequency division coefficient;
         pstdiv2: second stage output frequency division coefficient.
         For the configuration coefficients of each PLL, see the corresponding bits of the corresponding configuration registers in Table 3-3.
-*/        
+*/
 
 // PERI_CRG_PLL0/PERI_CRG_PLL6 is APLL/VPLL configuration register 0/6.
 struct PllConfig0 : public Register::Description<RegAccessConfig, 0x12010000> {
@@ -287,8 +287,68 @@ struct ResetConfig : public Register::Description<RegAccessConfig, 0x12010078>  
         struct ArmPclkClockGating : public Bit <0, TArmPclkClockGating> {};
 };
 
+// PERI_CRG31 Configure registers for DDR clock and reset.
+struct DdrClkAndRst : public Register::Description<RegAccessConfig, 0x1201007C> {
+        // [6] DDR APB Gating Configuration Register
+        // 0: turn off the clock;
+        // 1: Turn on the clock.
+        enum class TDdrApbClk {
+                Disabled,
+                Enabled
+        };
+        struct DdrApbClk : public Bit<6,TDdrApbClk> {};
+
+        // [5] DDR HiPACK Gating Configuration Register
+        // 0: turn off the clock;
+        // 1: Turn on the clock.
+        enum class TDdrHiPackClk {
+                Disable,
+                Enable
+        };
+        struct DdrHiPackClk : public Bit<5,TDdrHiPackClk> {};
+
+        // [4] DDR CFG Gating Configuration Register
+        // 0: turn off the clock;
+        // 1: Turn on the clock.
+        enum class TDdrCfgClk {
+                Disable,
+                Enable
+        };
+        struct DdrCfgClk : public Bit<5,TDdrCfgClk> {};
+
+        // [2] DDR PHY PLL spread spectrum clock bypass configuration register
+        // 0: bypass the spread spectrum clock of DDR PHY PLL;
+        // 1: Use the spread spectrum clock of DDR PHY PLL.
+        enum class TSpreadSpectrum {
+                Bypass,
+                Enabled
+        };
+        struct SpreadSpectrum : public Bit<2,TSpreadSpectrum> {};
+
+        // [1] DDR APB soft reset request
+        // 0: cancel reset;
+        // 1: reset.
+        enum class TApbSoftReset {
+                Cancel,
+                Reset
+        };
+        struct ApbSoftReset : public Bit<1, TApbSoftReset> {};
+
+        // [0] DDR HiPACK soft reset request
+        // 0: cancel reset;
+        // 1: reset.
+        enum class TDdrHiPackReset {
+                Cancel,
+                Reset
+        };
+        struct DdrHiPackReset : public Bit<0, TDdrHiPackReset> {};
+        
+};
+
+
+
 // PERI_CRG32 is the SOC clock selection register.
-struct SocClkSel : public Register::Description<RegAccessConfig, 0x12010078> {
+struct SocClkSel : public Register::Description<RegAccessConfig, 0x12010080> {
         // [10] SYSAPB clock selection.
         // 0: 24MHz; 1: 50MHz
         enum class TSysApbClock {
