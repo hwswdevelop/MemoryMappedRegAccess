@@ -9,10 +9,10 @@
 #include <RegistersClass.h>
 
 struct RegAccessConfig {
-        using Value   = uint32_t;
-        using Address = uint32_t;
-        static constexpr const bool ReadSync = false;
-        static constexpr const bool WriteSync = false;
+        typedef uint32_t ValueType;
+        typedef uint32_t AddressType;
+        static constexpr const bool ReadSync = true;
+        static constexpr const bool WriteSync = true;
 };
 
 namespace PeriCrg {
@@ -35,7 +35,7 @@ struct PllConfig0 : public Register::Description<RegAccessConfig, 0x12010000> {
         // [26:24] APLL first-stage output frequency division coefficient.
         struct Postdiv1 : public Field< 26, 24, uint8_t> {};
         // [23:0]  The fractional part of the APLL multiplier coefficient.
-        struct Frac     : public Field< 23,  0, uint32_t> {};
+        struct Frac : public Field< 23,  0, uint32_t> {};
 };
 
 // PERI_CRG_PLL1/PERI_CRG_PLL7 is APLL/VPLL configuration register 1/7.
@@ -46,7 +46,7 @@ struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
                 NoBypass,
                 Bypass
         };
-        struct Bypass       : public Bit < 26, TBypass > {};
+        struct Bypass : public Bit < 26, TBypass > {};
 
         // [25] APLL test signal control.
         // 1: power down working state; 0: Normal working state.
@@ -88,7 +88,7 @@ struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
         };
         struct PostdivPoweDown : public Bit< 21, TPostdivPoweDown > {};
 
-        // [2] APLL FOUT Output Power Down control.
+        // [20] APLL FOUT Output Power Down control.
         // 1: no clock output; 0: Normal clock output.
         enum class TFoutPowerDown {
                 Normal,
@@ -230,6 +230,58 @@ struct PllASpectrumSpread : public Register::Description<RegAccessConfig, 0x1200
 
 };
 
+// PERI_CRG23 Exhibition for VPLL
+struct VpllExhibition : public Register::Description<RegAccessConfig, 0x1201005C> {
+
+        // [12:9] ssmod divval[12:9]: SSMOD divval control.
+        // 0x0: no frequency division;
+        // 0x1: no frequency division;
+        // 0x2: divide by 2;
+        // 0x3: divide by 3;
+        struct SsModDivVal : public Field < 12, 9, uint8_t> {};
+
+        // [8:4] ssmod spread[8:4] SSMOD spread control.
+        // 0 : 0; 1: 0.1%; 2: 0.2%
+        // 3: 0.3%; 4: 0.4%; 5: 0.5%;
+        struct SsVModSpreadVal : public Field < 8, 4, uint8_t > {};
+
+        // [3] ssmod downspread[3] SSMOD downspread control.
+        // 0: Intermediate spread frequency;
+        // 1: Spread spectrum downward.
+        enum class TSpreadMode {
+                Intermediate,
+                SpreadDownward
+        };
+        struct SpreadMode : public Bit< 3, TSpreadMode > {};
+
+        // [2] ssmod_disable[2] SSMOD disable control.
+        // 0: enable;
+        // 1: disable.
+        enum class TSsModEn {
+                Enable,
+                Disable
+        };
+        struct SsModEn : public Bit< 2, TSsModEn > {};
+
+        // [1] ssmod_rst_req[1] SSMOD reset control.
+        // 0: no reset;
+        // 1: reset.
+        enum class TSsModRstReq {
+                NoRequest,
+                Reset
+        };
+        struct SsModRstReq : public Bit< 1, TSsModRstReq > {};
+
+        // [0] ssmod_cken[0] SSMOD clock gating configuration, disabled by default.
+        // 0: off; 1: open.
+        enum class TSsModClkEn {
+                Off,
+                Open
+        };
+        struct SsModClkEn : public Bit< 0, TSsModClkEn > {};
+ 
+};
+
 // PERI_CRG30 is the CPU frequency mode and reset configuration register.
 struct ResetConfig : public Register::Description<RegAccessConfig, 0x12010078>  {
         // [10] CS soft reset request.
@@ -348,7 +400,7 @@ struct DdrClkAndRst : public Register::Description<RegAccessConfig, 0x1201007C> 
 
 
 // PERI_CRG32 is the SOC clock selection register.
-struct SocClkSel : public Register::Description<RegAccessConfig, 0x12010080> {
+struct SocClkSel : public Register::Description<RegAccessConfig, (const uint32_t)0x12010080 > {
         // [10] SYSAPB clock selection.
         // 0: 24MHz; 1: 50MHz
         enum class TSysApbClock {
@@ -391,6 +443,54 @@ struct SocClkSel : public Register::Description<RegAccessConfig, 0x12010080> {
                 Freq600MHz = 0x03            
         };
         struct CoreA7ClkSel : public Field<1,0, TCoreA7ClkSel> {};
+};
+
+// PERI_CRG40 Configure the register for the frequency of the media function block.
+struct MediaBlockFreq : public Register::Description<RegAccessConfig, 0x120100A0> {
+        // [22:20] VPSS clock selection.
+        // 000: 257MHz;
+        // 001: 200MHz;
+        // 010: 150MHz;
+        // 011: 100MHz;
+        // 100: 75MHz;
+        enum class TVpssClk {
+                Freq257MHz,
+                Freq200MHz,
+                Freq150MHz,
+                Freq100MHz,
+                Freq75MHz
+        };
+        struct VpssClk : public Field< 22, 20, TVpssClk > {};
+
+        // [18] JPGE clock selection.
+        // 0: 450MHz; 1: 300MHz.
+        enum class TJpgeClk {
+                Freq450MHz,
+                Freq300MHz
+        };
+        struct JpgeClk : public Bit< 18, TJpgeClk > {};
+
+        // [10] VDEU clock selection.
+        // 0: 450MHz; 1: 300MHz.
+        enum class TVeduClk {
+                Freq450MHz,
+                Freq300MHz
+        };
+        struct VeduClk : public Bit< 10, TVeduClk > {};
+
+        // [2:1] IVE clock selection.
+        // 00: 450MHz;
+        // 01: 360MHz;
+        // 10: 300MHz;
+        // 11: 100MHz.
+        enum class TIveClockSel {
+                Freq450MHz,
+                Freq360MHz,
+                Freq300MHz,
+                Freq100MHz
+        };
+        struct IveClockSel : public Field< 2, 1, TIveClockSel > {};
+
 };
 
 // PERI_CRG_PLL122 It is the PLL LOCK status register.
