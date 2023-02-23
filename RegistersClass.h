@@ -34,7 +34,7 @@ namespace Register {
 				  typename RegAddressType = typename RegisterAccessConfig::AddressType,
 				  RegAddressType FieldAddress = RegisterAddress >			  
 		struct Field {
-			using ValueType = FieldValueType;
+			typedef FieldValueType ValueType;
 
 			static constexpr const size_t LSB = lsb;
 			static constexpr const size_t MSB = msb;
@@ -83,13 +83,13 @@ namespace Register {
 		struct Value : public Field< (sizeof(typename RegisterAccessConfig::ValueType) * 8) - 1, 0, typename RegisterAccessConfig::ValueType> {};
 
 		static inline void syncReadCommand() {
-			if constexpr( RegisterAccessConfig::ReadSync ){
+			if constexpr( RegisterAccessConfig::ReadSync ) {
 				asm("dsb");
 			}
 		}
 
 		static inline void syncWriteCommand() {			
-			if constexpr( RegisterAccessConfig::WriteSync ){
+			if constexpr( RegisterAccessConfig::WriteSync ) {
 				asm("dsb st");
 			}
 		}
@@ -108,7 +108,7 @@ namespace Register {
 
 	template <typename Reg, typename Field, typename... Fields>
 	const typename Reg::RegisterValueType getRegValue( const typename Field::ValueType val, const typename Fields::ValueType... args ) {
-		static_assert( ( Reg::address() == Field::address() ), "Please check filed parameter and register" );
+		static_assert( ( Reg::address() == Field::address() ), "Please check field parameter and register" );
 		if constexpr ( sizeof...(Fields) == 0 ) {
 			const typename Reg::RegisterValueType regValue = (static_cast<typename Reg::RegisterValueType>(val) & Field::LsbMask) << Field::LSB;
 			return regValue;
