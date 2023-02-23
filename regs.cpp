@@ -256,10 +256,10 @@ void aaa(void) {
 		);
 /*
 14000a84:       e3a03000        mov     r3, #0		; 0x0000 low part of address
-14000a88:       e3413201        movt    r3, #4609   ; 0x1201 high part of address
+14000a88:       e3413201        movt    r3, #4609   	; 0x1201 high part of address
 14000a8c:       e3a02000        mov     r2, #0		; Load value as combianation of bits (Template)
 14000a90:       e5832000        str     r2, [r3]	; Write into register
-14000a94:       f57ff04e        dsb     st			; Barier (Store)
+14000a94:       f57ff04e        dsb     st		; Barier (Store)
 */		
 	WriteReg< Reg1, 
 		Reg1::A,
@@ -274,7 +274,7 @@ void aaa(void) {
 /*		
 14000a98:       e3a02001        mov     r2, #1		; New value as combination of bits (Template)
 14000a9c:       e5832000        str     r2, [r3]	; Write into register
-14000aa0:       f57ff04e        dsb     st			; Barier (Store)
+14000aa0:       f57ff04e        dsb     st		; Barier (Store)
 */
 	WriteReg< Reg1, 
 		Reg1::A,
@@ -287,12 +287,12 @@ void aaa(void) {
 			0
 		);
 /*
-14000aa4:       f57ff04d        dsb     ld			; Barier (Load), because of not all bits are write
+14000aa4:       f57ff04d        dsb     ld		; Barier (Load), because of not all bits are write
 14000aa8:       e5932000        ldr     r2, [r3]	; Load register value, because of not all bits are write
-14000aac:       e202201e        and     r2, r2, #30 ; "And" mask, all bits except of Reg::B is cleared
+14000aac:       e202201e        and     r2, r2, #30 	; "And" mask, all bits except of Reg::B is cleared
 14000ab0:       e3822001        orr     r2, r2, #1	; "Or" mask, Reg:A = 1
 14000ab4:       e5832000        str     r2, [r3]	; Store register value
-14000ab8:       f57ff04e        dsb     st			; Barier (Store)
+14000ab8:       f57ff04e        dsb     st		; Barier (Store)
 */
 
 }
