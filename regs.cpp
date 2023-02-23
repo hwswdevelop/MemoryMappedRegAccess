@@ -223,6 +223,19 @@ namespace Register {
 using namespace Register;
 
 struct Reg1 {
+	// So ....
+	// Reg1 is 32 bit register, located at 0x12010000
+	// Reg1 is:
+	//     [0] - Single bit Type TA (enum class TA)
+	//   [4:1] - B field
+	//  [13:5] - C field
+	//    [14] - Reserved, write as 0
+	// [30:15] - D field
+	//    [31] - Reserved, write as 0
+	// So, I don't know how to make removable Reserved, 
+	// is it possiblie to use something lile std::is_field_preset in gcc
+	// "__if_exsits(Reg::Reserved)" - is not working, if gcc used 
+	
 	enum class TA {
 		Zero, One
 	};
@@ -230,12 +243,13 @@ struct Reg1 {
 	typedef RW< 0x12010000, Field< 4, 1> >     B;
 	typedef RW< 0x12010000, Field< 13, 5> >    C;
 	typedef RW< 0x12010000, Field< 30, 15> >   D;
-
 	typedef RW< 0x12010000, Field< 31, 0>>     Value;
+#if 1	
 	typedef RS< 0x12010000, Field< 14, 14>, 
-			RS< 0x12010000, Field< 31, 31> >> Reserved;
-
-	//typedef RS_Null 						  Reserved;
+		RS< 0x12010000, Field< 31, 31> >> Reserved;
+#endif	
+	typedef RS_Null 			  Reserved;
+#else	
 };
 
 void aaa(void) {
