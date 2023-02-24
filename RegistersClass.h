@@ -219,5 +219,13 @@ namespace Register {
 		}
 	};
 
+	template< typename Reg, typename... Fields >
+	bool IsEqual( typename Fields::Type... args )  {
+		constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>();
+		const typename Reg::Value::Type maskedValue = getRegValueInt<Reg, Fields...>( args... ) & ConcatMask;
+		const typename Reg::Value::Type maskedReadValue = Reg::Value::get() & ConcatMask;
+		return ( maskedValue == maskedReadValue );
+	};
+
 }
 
