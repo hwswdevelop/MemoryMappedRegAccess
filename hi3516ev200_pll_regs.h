@@ -8,15 +8,10 @@
 #include <stdint.h>
 #include <RegistersClass.h>
 
-struct RegAccessConfig {
-        typedef uint32_t ValueType;
-        typedef uint32_t AddressType;
-        static constexpr const bool ReadSync = true;
-        static constexpr const bool WriteSync = true;
-};
 
 namespace PeriCrg {
 
+using namespace Register;
 
 /*
         HiSilicon DataSheet.
@@ -29,24 +24,27 @@ namespace PeriCrg {
 */
 
 // PERI_CRG_PLL0/PERI_CRG_PLL6 is APLL/VPLL configuration register 0/6.
-struct PllConfig0 : public Register::Description<RegAccessConfig, 0x12010000> {
+struct PllConfig0 : public Description<0x12010000> {
         // [30:28] The second stage of the APLL outputs the frequency division factor.
-        struct Postdiv2 : public Field< 30, 28, uint8_t> {};
+        typedef RW< getAddress(), Field< 30, 28, uint8_t>> Postdiv2;
         // [26:24] APLL first-stage output frequency division coefficient.
-        struct Postdiv1 : public Field< 26, 24, uint8_t> {};
+        typedef RW< getAddress(), Field< 26, 24, uint8_t>> Postdiv1;
         // [23:0]  The fractional part of the APLL multiplier coefficient.
-        struct Frac : public Field< 23,  0, uint32_t> {};
+        typedef RW< getAddress(), Field< 23,  0, uint32_t>> Frac;
+        // [27], [31] - Reservied fields
+        typedef RS< getAddress(), Field< 27, 27 >, 
+                RS< getAddress(), Field< 31, 31> > > Reserved;
 };
 
 // PERI_CRG_PLL1/PERI_CRG_PLL7 is APLL/VPLL configuration register 1/7.
-struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
+struct PllConfig1 :  public Description<0x12010004> {
         // [26]    APLL clock divider bypass (bypass) control system.
         // 0: no bypass; 1: Bypass;
         enum class TBypass {
                 NoBypass,
                 Bypass
         };
-        struct Bypass : public Bit < 26, TBypass > {};
+        typedef RW< getAddress(), Bit < 26, TBypass > > Bypass;
 
         // [25] APLL test signal control.
         // 1: power down working state; 0: Normal working state.
@@ -54,7 +52,7 @@ struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
                 PowerDown,
                 Normal
         };
-        struct DacPowerDown : public Bit < 25, TDacPowerDown> {};
+        typedef RW< getAddress(), Bit < 25, TDacPowerDown> > DacPowerDown;
 
         // [24] PLL fractional frequency control.
         // 0: decimal mode; 1: Integer mode.
@@ -62,7 +60,7 @@ struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
                 DecimalMode,
                 IntegerMode
         };
-        struct FracMode : public Bit < 24, TFracMode > {};
+        typedef RW< getAddress(), Bit < 24, TFracMode >>  FracMode;
 
         // [23] APLL Power Down control.
         // 1: power down working state; 0: Normal working state.
@@ -70,23 +68,24 @@ struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
                 Normal,
                 PowerDown
         };
-        struct PowerDown : public Bit < 23, TPowerDownControl > {};
-
+        typedef RW< getAddress(), Bit < 23, TPowerDownControl >> PowerDown;
+ 
         // [22] APLL VCO Output Power Down control.
         // 1: no clock output; 0: Normal output clock.
         enum class TVcoOutputPowerDown {
                 Normal,
                 PowerDown
         };
-        struct VcoOutPowerDown : public Bit < 22, TVcoOutputPowerDown > {};
-
+        typedef RW< getAddress(), Bit < 22, TVcoOutputPowerDown >> VcoOutPowerDown;
+ 
         // [21] APLL POSTDIV Output Power Down control.
         // 1: no clock output; 0: Normal clock output.
-        enum class TPostdivPoweDown {
+        enum class TPostdivPowerDown {
                 Normal,
                 PowerDown
         };
-        struct PostdivPoweDown : public Bit< 21, TPostdivPoweDown > {};
+        typedef RW< getAddress(), Bit< 21, TPostdivPowerDown >> PostdivPowerDown;
+
 
         // [20] APLL FOUT Output Power Down control.
         // 1: no clock output; 0: Normal clock output.
@@ -94,34 +93,42 @@ struct PllConfig1 :  public Register::Description<RegAccessConfig, 12010004> {
                 Normal,
                 NoClockOutput
         };
-        struct FoutPowerDown : public Bit< 20, TFoutPowerDown > {};
+        typedef RW< getAddress(), Bit< 20, TFoutPowerDown >> FoutPowerDown;
 
         // [17:12] RW apll_refdiv APLL reference clock division factor.
-        struct Refdiv : public Field < 17, 12, uint8_t> {};
+        typedef RW< getAddress(), Field < 17, 12, uint8_t>> Refdiv;
 
         // [11:0] RW apll_fbdiv Integer part of APLL multiplier coefficient.
-        struct FBdiv : public Field < 11, 0, uint16_t > {}; 
+        typedef RW< getAddress(), Field < 11, 0, uint16_t>> FBdiv;
+
+        // [31:27], [19:18] Reserved
+        typedef RS< getAddress(), Field<19, 18>,
+                RS< getAddress(), Field<31,27> > > Reserved;
+ 
 };
 
 // PERI_CRG_PLL0/PERI_CRG_PLL6 is APLL/VPLL configuration register 0/6.
-struct PllConfig6 : public Register::Description<RegAccessConfig, 0x12010018> {
+struct PllConfig6 : public Description< 0x12010018 > {
         // [30:28] The second stage of the APLL outputs the frequency division factor.
-        struct Postdiv2 : public Field< 30, 28, uint8_t> {};
+        typedef RW< getAddress(), Field< 30, 28, uint8_t>> Postdiv2;
         // [26:24] APLL first-stage output frequency division coefficient.
-        struct Postdiv1 : public Field< 26, 24, uint8_t> {};
+        typedef RW< getAddress(), Field< 26, 24, uint8_t>> Postdiv1;
         // [23:0]  The fractional part of the APLL multiplier coefficient.
-        struct Frac     : public Field< 23,  0, uint32_t> {};
+        typedef RW< getAddress(), Field< 23,  0, uint32_t>> Frac;
+        // [27], [31] - Reservied fields
+        typedef RS< getAddress(), Field< 27, 27 >, 
+                RS< getAddress(), Field< 31, 31> > > Reserved;
 };
 
 // PERI_CRG_PLL1/PERI_CRG_PLL7 is APLL/VPLL configuration register 1/7.
-struct PllConfig7 :  public Register::Description<RegAccessConfig, 0x1201001C> {
+struct PllConfig7 :  public Description< 0x1201001C > {
         // [26]    APLL clock divider bypass (bypass) control system.
         // 0: no bypass; 1: Bypass;
         enum class TBypass {
                 NoBypass,
                 Bypass
         };
-        struct Bypass       : public Bit < 26, TBypass > {};
+        typedef RW< getAddress(), Bit < 26, TBypass > > Bypass;
 
         // [25] APLL test signal control.
         // 1: power down working state; 0: Normal working state.
@@ -129,7 +136,7 @@ struct PllConfig7 :  public Register::Description<RegAccessConfig, 0x1201001C> {
                 PowerDown,
                 Normal
         };
-        struct DacPowerDown : public Bit < 25, TDacPowerDown> {};
+        typedef RW< getAddress(), Bit < 25, TDacPowerDown> > DacPowerDown;
 
         // [24] PLL fractional frequency control.
         // 0: decimal mode; 1: Integer mode.
@@ -137,7 +144,7 @@ struct PllConfig7 :  public Register::Description<RegAccessConfig, 0x1201001C> {
                 DecimalMode,
                 IntegerMode
         };
-        struct FracMode : public Bit < 24, TFracMode > {};
+        typedef RW< getAddress(), Bit < 24, TFracMode >>  FracMode;
 
         // [23] APLL Power Down control.
         // 1: power down working state; 0: Normal working state.
@@ -145,38 +152,47 @@ struct PllConfig7 :  public Register::Description<RegAccessConfig, 0x1201001C> {
                 Normal,
                 PowerDown
         };
-        struct PowerDown : public Bit < 23, TPowerDownControl > {};
-
+        typedef RW< getAddress(), Bit < 23, TPowerDownControl >> PowerDown;
+ 
         // [22] APLL VCO Output Power Down control.
         // 1: no clock output; 0: Normal output clock.
         enum class TVcoOutputPowerDown {
                 Normal,
                 PowerDown
         };
-        struct VcoOutPowerDown : public Bit < 22, TVcoOutputPowerDown > {};
-
+        typedef RW< getAddress(), Bit < 22, TVcoOutputPowerDown >> VcoOutPowerDown;
+ 
         // [21] APLL POSTDIV Output Power Down control.
         // 1: no clock output; 0: Normal clock output.
-        enum class TPostdivPoweDown {
+        enum class TPostdivPowerDown {
                 Normal,
                 PowerDown
         };
-        struct PostdivPoweDown : public Bit< 21, TPostdivPoweDown > {};
+        typedef RW< getAddress(), Bit< 21, TPostdivPowerDown >> PostdivPowerDown;
 
-        // [2] APLL FOUT Output Power Down control.
+
+        // [20] APLL FOUT Output Power Down control.
         // 1: no clock output; 0: Normal clock output.
         enum class TFoutPowerDown {
                 Normal,
                 NoClockOutput
         };
-        struct FoutPowerDown : public Bit< 20, TFoutPowerDown > {};
+        typedef RW< getAddress(), Bit< 20, TFoutPowerDown >> FoutPowerDown;
 
         // [17:12] RW apll_refdiv APLL reference clock division factor.
-        struct Refdiv : public Field < 17, 12, uint8_t> {};
+        typedef RW< getAddress(), Field < 17, 12, uint8_t>> Refdiv;
 
         // [11:0] RW apll_fbdiv Integer part of APLL multiplier coefficient.
-        struct FBdiv : public Field < 11, 0, uint16_t > {}; 
+        typedef RW< getAddress(), Field < 11, 0, uint16_t>> FBdiv;
+        
+        // [31:27], [19:18] Reserved
+        typedef RS< getAddress(), Field<19, 18>,
+                RS< getAddress(), Field<31,27> > > Reserved;
+ 
 };
+
+
+#if 0
 
 // PERI_CRG20 is the APLL spread spectrum configuration register.
 struct PllASpectrumSpread : public Register::Description<RegAccessConfig, 0x12000050>  {
@@ -397,33 +413,33 @@ struct DdrClkAndRst : public Register::Description<RegAccessConfig, 0x1201007C> 
         
 };
 
-
+#endif
 
 // PERI_CRG32 is the SOC clock selection register.
-struct SocClkSel : public Register::Description<RegAccessConfig, (const uint32_t)0x12010080 > {
+struct SocClkSel : public Register::Description< 0x12010080 > {
         // [10] SYSAPB clock selection.
         // 0: 24MHz; 1: 50MHz
         enum class TSysApbClock {
                 Freq24MHz,
                 Freq50MHZ
         };
-        struct SysApbClock : public Bit<10, TSysApbClock> {};
-
+        typedef RW< getAddress(), Bit<10, TSysApbClock>> SysApbClock;
+ 
         // [8] SYSCFG Clock selection.
         // 0: 24MHz; 1: 100MHz
         enum class TSysCfgClk {
                 Freq24MHz,
                 Freq100MHz
         };
-        struct SysCfgClk : public Bit<8, TSysCfgClk> {};
-
+        typedef RW< getAddress(), Bit<8, TSysCfgClk>> SysCfgClk;
+ 
         // [6] SYSAXI clock selection.
         // 0: 24MHz; 1: 200MHz
         enum class TSysAxiClk {
                 Freq24MHz,
                 Freq200MHz
         };
-        struct SysAxiClk : public Bit<6,TSysAxiClk> {};
+        typedef RW< getAddress(), Bit<6,TSysAxiClk>> SysAxiClk;
 
         // [5:3] DDR clock selection.
         // 000: 24MHz; 011: 300MHz;
@@ -432,8 +448,8 @@ struct SocClkSel : public Register::Description<RegAccessConfig, (const uint32_t
                 Freq24MHz,
                 Freq300MHz = 0x03
         };
-        struct DdrClkSel : public Field<5,3, TDdrClkSel> {};
-
+        typedef RW< getAddress(), Field<5,3, TDdrClkSel>> DdrClkSel;
+        
         // [1:0] A7 clock selection.
         // 00: 24MHz; 01: 900MHz; 11: 600MHz;
         // Other: reserved.
@@ -442,9 +458,17 @@ struct SocClkSel : public Register::Description<RegAccessConfig, (const uint32_t
                 Freq900MHz = 0x01,
                 Freq600MHz = 0x03            
         };
-        struct CoreA7ClkSel : public Field<1,0, TCoreA7ClkSel> {};
+        typedef RW< getAddress(), Field<1,0, TCoreA7ClkSel>> CoreA7ClkSel;
+
+        // [31:11], [9], [7], [2] - Reserved
+        typedef RS< getAddress(), Bit<2>,
+                RS< getAddress(), Bit<7>,
+                RS< getAddress(), Bit<9>,
+                RS< getAddress(), Field<31,11> >>>> Reserved;
 };
 
+
+#if 0
 // PERI_CRG40 Configure the register for the frequency of the media function block.
 struct MediaBlockFreq : public Register::Description<RegAccessConfig, 0x120100A0> {
         // [22:20] VPSS clock selection.
@@ -492,16 +516,17 @@ struct MediaBlockFreq : public Register::Description<RegAccessConfig, 0x120100A0
         struct IveClockSel : public Field< 2, 1, TIveClockSel > {};
 
 };
+#endif
 
 // PERI_CRG_PLL122 It is the PLL LOCK status register.
-struct PllLockStatus : public Register::Description<RegAccessConfig, 0x120101E8 > {
+struct PllLockStatus : public Register::Description< 0x120101E8 > {
         // [2] VPLL LOCK state.
         // 0: Unlock; 1: Locked.
         enum class TVPll {
                 Unlock,
                 Locked
         };
-        struct VPll : public Bit<2, TVPll> {};
+        typedef RW< getAddress(), Bit<2, TVPll>> VPll;
         
         // [0] APLL LOCK state.
         // 0: Unlock; 1: Locked.
@@ -509,7 +534,12 @@ struct PllLockStatus : public Register::Description<RegAccessConfig, 0x120101E8 
                 Unlock,
                 Locked
         };
-        struct APll : public Bit<0, TAPll> {};
+        typedef RW< getAddress(), Bit<0, TAPll>> APll;
+
+        // [31:3], [1] - Reserved
+        typedef RS< getAddress(), Bit<1>,
+                RS< getAddress(), Field<31,3>>> Reserved;
+
 };
 
 } // namespace PeriCrg
