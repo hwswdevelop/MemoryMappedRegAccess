@@ -105,8 +105,8 @@ void pllInit() {
 14000ad0:       e301204b        movw    r2, #4171              		; R2 = New value to set bits (Lo bits)
 14000ad4:       e3402300        movt    r2, #768         		; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 24-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
 14000ad8:       e1812002        orr     r2, r1, r2			; R1 |= R2 ; Set values 
-14000adc:       e5832004        str     r2, [r3, #4]
-14000ae0:       f57ff04e        dsb     st
+14000adc:       e5832004        str     r2, [r3, #4]			; Writr register [0x12010004] <= R2
+14000ae0:       f57ff04e        dsb     st				; Write barier
 */
 #else
 
