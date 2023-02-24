@@ -183,6 +183,13 @@ void pllInit() {
 14000af8:       e1e03003        mvn     r3, r3				; Not R3
 14000afc:       e3130005        tst     r3, #5				; Test, bits 2, 0 is set
 14000b00:       1afffffa        bne     14000af0 <_Z7pllInitv+0x6c> 	;// Loop if not set
+
+****************  The same code with maximum Optimizaion -Os *******************
+14000ad8:       f57ff04d        dsb     ld				; Read barier. r2 preloaded before
+14000adc:       e59231e8        ldr     r3, [r2, #488]  ; 0x1e8		; R3 <= [0x120101e8], i.e. load reg value
+14000ae0:       e2033005        and     r3, r3, #5			; Apply mask
+14000ae4:       e3530005        cmp     r3, #5				; Compare with const (2,0 bits is set = APLL, VPLL)
+14000ae8:       1afffffa        bne     14000ad8 <_Z7pllInitv+0x5c>	; Loop if is not equals
 */
 #endif
 
