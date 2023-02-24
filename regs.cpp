@@ -39,32 +39,32 @@ void pllInit() {
 			);
 /*
 ;Prepare, load Register(RegisterBase) addresss
-14000a88:       e3a03000        mov     r3, #0				; 0x0000
+14000a88:       e3a03000        mov     r3, #0			; 0x0000
 14000a8c:       e3413201        movt    r3, #4609       	; 0x1201, i.e. R3 <= 0x12010000
 
-14000a90:       e3a02000        mov     r2, #0				; R2 <= 0, i.e all clocks is 24MHz
+14000a90:       e3a02000        mov     r2, #0			; R2 <= 0, i.e all clocks is 24MHz
 14000a94:       e5832080        str     r2, [r3, #128]  	; [0x12010000] <= 0
-14000a98:       f57ff04e        dsb     st					; Write bariler instruction
+14000a98:       f57ff04e        dsb     st			; Write bariler instruction
 */	
 
 	/* Setup PLLA - bypass mode */
 	PllConfig1::Bypass::set(PllConfig1::Bypass::Type::Bypass);
 /*
-14000a9c:       f57ff04d        dsb     ld						; Read barier
-14000aa0:       e5932004        ldr     r2, [r3, #4]			; Load register value R2 <= [0x12010004]
+14000a9c:       f57ff04d        dsb     ld			; Read barier
+14000aa0:       e5932004        ldr     r2, [r3, #4]		; Load register value R2 <= [0x12010004]
 14000aa4:       e3822301        orr     r2, r2, #67108864       ; R2 |= 0x4000000, i.e. set Bypass
-14000aa8:       e5832004        str     r2, [r3, #4]			; [0x12010004] <= R2, i.e. Write register
-14000aac:       f57ff04e        dsb     st						; Write barier
+14000aa8:       e5832004        str     r2, [r3, #4]		; [0x12010004] <= R2, i.e. Write register
+14000aac:       f57ff04e        dsb     st			; Write barier
 */
 
 	/* Setup PLLV - bypass mode */
 	PllConfig7::Bypass::set(PllConfig7::Bypass::Type::Bypass);
 /*
-14000ab0:       f57ff04d        dsb     ld						; Read barier
-14000ab4:       e593201c        ldr     r2, [r3, #28]			; Load register value R2 <= [0x1201001C]
+14000ab0:       f57ff04d        dsb     ld			; Read barier
+14000ab4:       e593201c        ldr     r2, [r3, #28]		; Load register value R2 <= [0x1201001C]
 14000ab8:       e3822301        orr     r2, r2, #67108864       ; R2 |= 0x4000000, i.e. set Bypass
-14000abc:       e583201c        str     r2, [r3, #28]			; [0x1201001C] <= R2, i.e. Write register
-14000ac0:       f57ff04e        dsb     st						; Write barier
+14000abc:       e583201c        str     r2, [r3, #28]		; [0x1201001C] <= R2, i.e. Write register
+14000ac0:       f57ff04e        dsb     st			; Write barier
 */
 
 #if 0
@@ -88,15 +88,26 @@ void pllInit() {
 						PllConfig1::FBdiv::Type(75)	// 24Mhz * 75 = 1800MHz
 					 );
 /*
+
+;*********************************************************************
+; So. Please compare last to C++ commads, 
+; depended on PllConfig1::VcoOutPowerDown presence
+;
+; The difference is, one bitfield is written or not....
+; But it is produce too different code
+; It read register value, if need to skip bitfiled value
+; But it didn't do it, if all register bits have to be written
+;**********************************************************************
+
 ;  ***** PllConfig1::VcoOutPowerDown, is skipped - need to read register ******
-14000ac4:       f57ff04d        dsb     ld						; Read barier
-14000ac8:       e5931004        ldr     r1, [r3, #4]			; Read R1 <= [0x12010004]
+14000ac4:       f57ff04d        dsb     ld			; Read barier
+14000ac8:       e5931004        ldr     r1, [r3, #4]		; Read R1 <= [0x12010004]
 14000acc:       e2011501        and     r1, r1, #4194304        ; R1 &= 0x00400000, i.e. Clear all bits except of VcoOutPowerDown
 14000ad0:       e301204b        movw    r2, #4171              	; R2 = New value to set bits (Lo bits)
-14000ad4:       e3402300        movt    r2, #768         		; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 25-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
-14000ad8:       e1812002        orr     r2, r1, r2				; R1 |= R2 ; Set values 
-14000adc:       e5832004        str     r2, [r3, #4]
-14000ae0:       f57ff04e        dsb     st
+14000ad4:       e3402300        movt    r2, #768         	; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 25-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
+14000ad8:       e1812002        orr     r2, r1, r2		; R1 |= R2 ; Set values 
+14000adc:       e5832004        str     r2, [r3, #4]		; Write register i.e. [0x12010004] <= R1
+14000ae0:       f57ff04e        dsb     st			; Write barier
 */
 #else
 
@@ -127,7 +138,8 @@ void pllInit() {
 14000ac4:       e301204b        movw    r2, #4171       	; R2 = New register value to write bits (Lo bits)
 14000ac8:       e3402300        movt    r2, #768        	; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 25-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
 14000acc:       e5832004        str     r2, [r3, #4]		; [0x12010004] <= 0x0300104B, i.e. Write all register bits
-14000ad0:       f57ff04e        dsb     st					; Write barier
+14000ad0:       f57ff04e        dsb     st			; Write barier
+
 */
 
 #endif
