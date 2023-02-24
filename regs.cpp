@@ -103,7 +103,7 @@ void pllInit() {
 14000ac8:       e5931004        ldr     r1, [r3, #4]			; Read R1 <= [0x12010004]
 14000acc:       e2011501        and     r1, r1, #4194304        	; R1 &= 0x00400000, i.e. Clear all bits except of VcoOutPowerDown
 14000ad0:       e301204b        movw    r2, #4171              		; R2 = New value to set bits (Lo bits)
-14000ad4:       e3402300        movt    r2, #768         		; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 25-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
+14000ad4:       e3402300        movt    r2, #768         		; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 24-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
 14000ad8:       e1812002        orr     r2, r1, r2			; R1 |= R2 ; Set values 
 14000adc:       e5832004        str     r2, [r3, #4]
 14000ae0:       f57ff04e        dsb     st
@@ -135,7 +135,7 @@ void pllInit() {
 /*
 ;  ***** PllConfig1::VcoOutPowerDown, is not skipped - don't need to read register before write ******
 14000ac4:       e301204b        movw    r2, #4171       	; R2 = New register value to write bits (Lo bits)
-14000ac8:       e3402300        movt    r2, #768        	; R2 <= 0x0300104B, i.e. set bits 25-DacPowerDown, 25-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
+14000ac8:       e3402300        movt    r2, #768        	; R2 <= 0x0300104B, i.e. set bits bit 25-DacPowerDown, bit 24-FracMode-Integer, and values RefDiv=1 & FBDiv=0x4B (75 dec))
 14000acc:       e5832004        str     r2, [r3, #4]		; [0x12010004] <= 0x0300104B, i.e. Write all register bits
 14000ad0:       f57ff04e        dsb     st			; Write barier
 */
