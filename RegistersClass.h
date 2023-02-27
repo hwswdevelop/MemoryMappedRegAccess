@@ -166,8 +166,15 @@ namespace Register {
 		return getRegReservedMaskInt<Reg, typename Reg::Reserved>();
 	};
 
+	// C++17, it is possible to use this one
+	// But, I am really wanna to check address
+	//template <typename Reg, typename... Fields>
+	//constexpr typename Reg::Value::Type getRegMaskInt() {
+	//	return 	(Fields::Description::getBitMask() | ...);	
+	//}
+
 	template <typename Reg, typename Field, typename... Fields>
-	constexpr typename Reg::Value::Type getRegMaskInt() {
+	constexpr typename Reg::Value::Type getRegMaskInt() {		
 		static_assert( ( Reg::Value::getAddress() == Field::getAddress() ), "Please check filed parameter and register" );
 		if constexpr ( sizeof...(Fields) == 0 ) {
 			if constexpr ( AccessMode::Reserved == Field::Policy ) {
@@ -227,5 +234,40 @@ namespace Register {
 		return ( maskedValue == maskedReadValue );
 	};
 
-}
+	template< typename Reg >
+	struct Class {
+		typedef Reg Description;
+		Class( AddressType address ) : _address(address) {};
 
+		template <typename... Fields>
+		void Write( typename Fields::Type... args ){
+			constexpr const typename Reg::Value::Type ReservedMask = getRegReservedMaskInt< Reg >();
+			constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>() | ReservedMask;
+			if constexpr ( ConcatMask == Reg::Value::Description::getBitMask() ) {
+				typename Reg::Value::Type regValue = getRegValueInt<Reg, Fields...>( args... );
+				*reinterpret_cast<volatile typename Reg::Value::Type* const>(_address) = regValue;
+				postWrite();
+			} else {
+				preRead();
+				typename Reg::Value::Type regValue = *reinterpret_cast<volatile typename Reg::Value::Type* const>(_address);
+				regValue &= ~( ConcatMask );
+				regValue |= getRegValueInt<Reg, Fields...>( args... );
+				Reg::Value::set(regValue);
+				*reinterpret_cast<volatile typename Reg::Value::Type* const>(_address) = regValue;
+				postWrite();
+			}
+		}
+
+		template< typename... Fields >
+		bool IsEqual( typename Fields::Type... args )  {
+			constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>();
+			const typename Reg::Value::Type maskedValue = getRegValueInt<Reg, Fields...>( args... ) & ConcatMask;
+			const typename Reg::Value::Type maskedReadValue = Reg::Value::get() & ConcatMask;
+			return ( maskedValue == maskedReadValue );
+		};		
+
+	private:
+		const AddressType _address { Reg::getAddress() };
+	};
+
+}
