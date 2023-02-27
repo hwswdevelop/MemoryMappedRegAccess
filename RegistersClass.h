@@ -234,9 +234,28 @@ namespace Register {
 		return ( maskedValue == maskedReadValue );
 	};
 
+	template<typename Reg, typename Field, typename... Fields>
+	inline void getFieldsFromReg(const typename Reg::Value::Type regValue, typename Field::Type &arg, typename Fields::Type&... args) {
+		static_assert( ( Reg::Value::getAddress() == Field::getAddress() ), "Please check field parameter and register" );
+		static_assert(( Field::Policy != AccessMode::Reserved ), "Trying to read reserved field");
+		arg = static_cast<const typename Field::Type>( ( regValue >> Field::Description::getLsb() ) & Field::Description::getLsbMask() );
+		if constexpr ( sizeof...(Fields) != 0 ) {
+			getFieldsFromReg<Reg, Fields...>( regValue, args... );
+		}		
+	}
+
+	template<typename Reg, typename ...Fields>
+	inline void Read( typename Fields::Type&... args ) {
+		preRead();
+		const typename Reg::Value::Type regValue = Reg::Value::get();
+		getFieldsFromReg<Reg, Fields...>( regValue, args... );
+	}
+
+
 	template< typename Reg >
 	struct Class {
 		typedef Reg Description;
+		Class() : _address( Reg::getAddress())  {};
 		Class( AddressType address ) : _address(address) {};
 
 		template <typename... Fields>
@@ -257,16 +276,6 @@ namespace Register {
 			}
 		}
 
-		template< typename Field, typename... Fields>
-		inline void getFieldsFromReg(const typename Reg::Value::Type regValue, typename Field::Type &arg, typename Fields::Type&... args) {
-			static_assert( ( Reg::Value::getAddress() == Field::getAddress() ), "Please check field parameter and register" );
-			static_assert(( Field::Policy != AccessMode::Reserved ), "Trying to read reserved field");
-			arg = static_cast<const typename Field::Type>( ( regValue >> Field::Description::getLsb() ) & Field::Description::getLsbMask() );
-			if constexpr ( sizeof...(Fields) != 0 ) {
-				getFieldsFromReg<Fields...>( regValue, args... );
-			}		
-		}
-
 		template< typename ...Fields>
 		inline void Read( typename Fields::Type&... args ) {
 			preRead();
@@ -284,12 +293,23 @@ namespace Register {
 		};		
 
 		template< typename Field >
-		inline const typename Field::Type get()  {
+		inline const typename Field::Type Get()  {
 			static_assert( (Reg::getAddress() == Field::getAddress()), "Please check bitfiled name and resgister");
 			preRead();
 			const typename Reg::Value::Type regValue = *reinterpret_cast<volatile typename Reg::Value::Type* const>(_address);
 			return static_cast<const typename Field::Type>( ( regValue >> Field::Description::getLsb() ) & Field::Description::getLsbMask() );
 		};
+
+	private:
+		template< typename Field, typename... Fields>
+		inline void getFieldsFromReg(const typename Reg::Value::Type regValue, typename Field::Type &arg, typename Fields::Type&... args) {
+			static_assert( ( Reg::Value::getAddress() == Field::getAddress() ), "Please check field parameter and register" );
+			static_assert(( Field::Policy != AccessMode::Reserved ), "Trying to read reserved field");
+			arg = static_cast<const typename Field::Type>( ( regValue >> Field::Description::getLsb() ) & Field::Description::getLsbMask() );
+			if constexpr ( sizeof...(Fields) != 0 ) {
+				getFieldsFromReg<Fields...>( regValue, args... );
+			}		
+		}
 
 	private:
 		const AddressType _address { Reg::getAddress() };
