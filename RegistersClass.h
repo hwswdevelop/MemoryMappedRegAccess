@@ -246,11 +246,9 @@ namespace Register {
 
 	template<typename Reg, typename ...Fields>
 	inline void Read( typename Fields::Type&... args ) {
-		preRead();
 		const typename Reg::Value::Type regValue = Reg::Value::get();
 		getFieldsFromReg<Reg, Fields...>( regValue, args... );
 	}
-
 
 	template< typename Reg >
 	struct Class {
