@@ -192,7 +192,7 @@ namespace Register {
 	}
 
 	template <typename Reg, typename Field, typename... Fields>
-	const typename Reg::Value::Type getRegValueInt( const typename Field::Type val, const typename Fields::Type... args ) {
+	inline const typename Reg::Value::Type getRegValueInt( const typename Field::Type val, const typename Fields::Type... args ) {
 		static_assert( ( Reg::Value::getAddress() == Field::getAddress() ), "Please check field parameter and register" );
 		if constexpr ( sizeof...(Fields) == 0 ) {
 			if constexpr ( Field::Policy == AccessMode::Reserved ) {
@@ -212,7 +212,7 @@ namespace Register {
 	}
 
 	template< typename Reg, typename... Fields >
-	void Write( typename Fields::Type... args )  {
+	inline void Write( const typename Fields::Type... args )  {
 		constexpr const typename Reg::Value::Type ReservedMask = getRegReservedMaskInt< Reg >();
 		constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>() | ReservedMask;
 		if constexpr ( ConcatMask == Reg::Value::Description::getBitMask() ) {
@@ -227,7 +227,7 @@ namespace Register {
 	};
 
 	template< typename Reg, typename... Fields >
-	bool IsEqual( typename Fields::Type... args )  {
+	inline bool IsEqual( const typename Fields::Type... args )  {
 		constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>();
 		const typename Reg::Value::Type maskedValue = getRegValueInt<Reg, Fields...>( args... ) & ConcatMask;
 		const typename Reg::Value::Type maskedReadValue = Reg::Value::get() & ConcatMask;
@@ -240,7 +240,7 @@ namespace Register {
 		Class( AddressType address ) : _address(address) {};
 
 		template <typename... Fields>
-		void Write( typename Fields::Type... args ){
+		inline void Write( const typename Fields::Type... args ){
 			constexpr const typename Reg::Value::Type ReservedMask = getRegReservedMaskInt< Reg >();
 			constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>() | ReservedMask;
 			if constexpr ( ConcatMask == Reg::Value::Description::getBitMask() ) {
@@ -252,19 +252,44 @@ namespace Register {
 				typename Reg::Value::Type regValue = *reinterpret_cast<volatile typename Reg::Value::Type* const>(_address);
 				regValue &= ~( ConcatMask );
 				regValue |= getRegValueInt<Reg, Fields...>( args... );
-				Reg::Value::set(regValue);
 				*reinterpret_cast<volatile typename Reg::Value::Type* const>(_address) = regValue;
 				postWrite();
 			}
 		}
 
+		template< typename Field, typename... Fields>
+		inline void getFieldsFromReg(const typename Reg::Value::Type regValue, typename Field::Type &arg, typename Fields::Type&... args) {
+			static_assert( ( Reg::Value::getAddress() == Field::getAddress() ), "Please check field parameter and register" );
+			static_assert(( Field::Policy != AccessMode::Reserved ), "Trying to read reserved field");
+			arg = static_cast<const typename Field::Type>( ( regValue >> Field::Description::getLsb() ) & Field::Description::getLsbMask() );
+			if constexpr ( sizeof...(Fields) != 0 ) {
+				getFieldsFromReg<Fields...>( regValue, args... );
+			}		
+		}
+
+		template< typename ...Fields>
+		inline void Read( typename Fields::Type&... args ) {
+			preRead();
+			const typename Reg::Value::Type regValue = *reinterpret_cast<volatile typename Reg::Value::Type* const>(_address);
+			getFieldsFromReg<Fields...>( regValue, args... );
+		}
+
 		template< typename... Fields >
-		bool IsEqual( typename Fields::Type... args )  {
+		inline const bool IsEqual( const typename Fields::Type... args )  {
 			constexpr const typename Reg::Value::Type ConcatMask = getRegMaskInt< Reg, Fields...>();
 			const typename Reg::Value::Type maskedValue = getRegValueInt<Reg, Fields...>( args... ) & ConcatMask;
-			const typename Reg::Value::Type maskedReadValue = Reg::Value::get() & ConcatMask;
+			preRead();
+			const typename Reg::Value::Type maskedReadValue = (*reinterpret_cast<volatile typename Reg::Value::Type* const>(_address)) & ConcatMask;
 			return ( maskedValue == maskedReadValue );
 		};		
+
+		template< typename Field >
+		inline const typename Field::Type get()  {
+			static_assert( (Reg::getAddress() == Field::getAddress()), "Please check bitfiled name and resgister");
+			preRead();
+			const typename Reg::Value::Type regValue = *reinterpret_cast<volatile typename Reg::Value::Type* const>(_address);
+			return static_cast<const typename Field::Type>( ( regValue >> Field::Description::getLsb() ) & Field::Description::getLsbMask() );
+		};
 
 	private:
 		const AddressType _address { Reg::getAddress() };
