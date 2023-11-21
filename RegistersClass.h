@@ -9,18 +9,18 @@
 #include <type_traits>
 
 namespace Register {
-	typedef unsigned int AddressType;
-	typedef unsigned int ValueType;
+	typedef uint32_t AddressType;
+	typedef uint32_t DefaultValueType;
 
 	inline void preRead(void) {
-		asm("dsb ld");
+		//asm("dsb ld");
 	}
 
 	inline void postWrite(void){
-		asm("dsb st");
+		//asm("dsb st");
 	}
 
-	template<size_t msb = 0, size_t lsb = 0, typename FieldValueTypeArg = ValueType, typename RegisterValueTypeArg = ValueType >
+	template<size_t msb = 0, size_t lsb = 0, typename FieldValueTypeArg = DefaultValueType, typename RegisterValueTypeArg = DefaultValueType >
 	struct Field {
 		typedef RegisterValueTypeArg 	RegisterValueType;
 		typedef FieldValueTypeArg 		FieldValueType;
@@ -49,7 +49,7 @@ namespace Register {
 		Reserved
 	};
 
-	template<size_t bitNo = 0, typename FieldValueTypeArg = ValueType, typename RegisterValueTypeArg = ValueType >
+	template<size_t bitNo = 0, typename FieldValueTypeArg = DefaultValueType, typename RegisterValueTypeArg = DefaultValueType >
 	struct Bit : public Field< bitNo, bitNo, FieldValueTypeArg, RegisterValueTypeArg > {};
 
 	template< AddressType address, typename Descr >
@@ -136,12 +136,12 @@ namespace Register {
 		}
 	};
 
-	template<AddressType address>
+	template<AddressType address, typename RegValueType = DefaultValueType>
 	struct Description {
 		static constexpr const AddressType getAddress() {
 			return _address;
 		}
-		typedef RW< getAddress(), Field<31,0> > Value; 
+		typedef RW< getAddress(), Field< (( sizeof(RegValueType) * 8) - 1), 0, RegValueType, RegValueType > > Value;
 	private:	
 		static constexpr const AddressType _address { address }; 
 	};
